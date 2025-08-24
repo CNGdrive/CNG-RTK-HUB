@@ -4,17 +4,19 @@
 
 **Purpose**: Single cross-vendor RTK client and toolkit. Normalizes receiver outputs. Manages corrections (NTRIP). Logs and exports survey-grade data. Provides diagnostics, benchmarking and APIs for external consumers.
 
-**Scope**: Mobile and desktop deployments supporting USB/serial/BT/UDP receivers. Initial targets: u‑blox ZED‑F9P, Unicore UM980. Future drivers: Trimble, Hemisphere, Septentrio.
+**Scope**: Mobile and desktop deployments supporting USB/serial/BT/UDP receivers. **Primary targets**: u‑blox ZED‑F9P, Unicore UM980 with dual-receiver capability. Future drivers: Trimble, Hemisphere, Septentrio.
 
 ---
 
 ## Architecture (concise)
 
-[Receiver HW] <--> [Driver Plugin (one per vendor)] --> [Core Services]
+[ZED-F9P Receiver] <--> [UBX Driver Plugin] ──┐
+                                                ├──> [Core Services]
+[UM980 Receiver] <--> [Unicore Driver Plugin] ──┘
 
-Core Services: GNSS Abstraction, NTRIP Correction Service, Data Logger, Benchmark Engine, Health Monitor.
+Core Services: GNSS Abstraction, NTRIP Correction Service, Data Logger, Benchmark Engine, Health Monitor, Protocol Normalizer.
 
-App UI consumes Core Services via internal API. Extensibility: Plugin manager, Cloud sync, Replay.
+App UI consumes Core Services via internal API. Extensibility: Plugin manager, Cloud sync, Replay, Dual-receiver benchmarking.
 
 **Implementation**: Follows layered architecture with dependency injection (see `implementation-checklist.md`). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
 
@@ -83,8 +85,8 @@ Fields are minimal and canonical for UI, logging and APIs.
 
 ## Non-functional constraints
 
-- Real-time latency target: <300 ms from correction receipt to published corrected solution for cellular/WAN when possible.
-- Memory/CPU: run on lightweight Linux device or user laptop.
+- Real-time latency target: <1000 ms from correction receipt to published corrected solution (relaxed from <300ms for accuracy priority).
+- Memory/CPU: run on lightweight Linux device or user laptop. **Android-optimized**: <100MB memory, <30% CPU for dual-receiver operation.
 - Modular code for Copilot to generate drivers and services.
 - **Responsive Design**: Universal screen size support (phones to tablets) with adaptive layouts.
 - **API Integration**: WebSocket real-time communication and HTTP REST endpoints (see above).

@@ -5,7 +5,7 @@
 ## Architecture
 **Layers**: Presentation (Flutter) → Application (Business Logic) → Domain (Models) → Infrastructure (I/O)
 **Patterns**: Plugin system via `IGNSSDriver` interface, Dependency injection `DIContainer`, Event-driven `EventBus`
-**Structure**: `src/core/` (models, services, utils), `src/drivers/` (zedf9p, um980), `src/infrastructure/` (storage, network), `src/api/` (websocket, http)
+**Structure**: `src/core/` (models, services, utils), `src/drivers/` (zedf9p, um980), `src/infrastructure/` (storage, network), `src/api/` (websocket, http), `src/android/` (resource management)
 
 ## Milestone 0 — Repo scaffold (1 day)
 - Create repo, CI skeleton, linter, pre-commit.
@@ -19,27 +19,45 @@
 - **Architecture references**: `responsive-ui-framework.md`, `settings-framework.md`, API (in `tech-spec.md`)
 
 
-## Milestone 1 — Driver interface + ZED‑F9P driver (3–5 days)
-- Define driver contract interface.
+## Milestone 1 — Dual-Driver Interface + ZED‑F9P driver (3–5 days)
+- Define driver contract interface supporting multiple receiver types.
 - Implement UBX parser and ZED‑F9P driver mapping to normalized state.
 - Unit tests with recorded UBX frames.
+- **Updated**: Support for dual-receiver architecture (ZED-F9P + UM980).
 
 **Files/classes**
-- `src/drivers/IDriver.py` (interface)
+- `src/drivers/IGNSSDriver.py` (interface)
+- `src/drivers/base_driver.py` (common functionality)
 - `src/drivers/zedf9p/ubx_parser.py`
 - `src/drivers/zedf9p/zedf9p_driver.py`
 - `tests/drivers/test_ubx_parser.py`
 
-**Copilot prompt**: Generate Python class `Zedf9pDriver` implementing `IDriver` with UBX frame parsing and RTK state normalization.
+**Copilot prompt**: Generate Python class `Zedf9pDriver` implementing `IGNSSDriver` with UBX frame parsing and RTK state normalization.
+
+
+## Milestone 1.5 — UM980 Unicore Driver (2–3 days)
+- Implement Unicore binary parser and UM980 driver mapping to normalized state.
+- Add support for BESTPOS, SATELLITESTATUS messages.
+- Unit tests with recorded Unicore binary frames.
+
+**Files/classes**
+- `src/drivers/um980/unicore_parser.py`
+- `src/drivers/um980/unicore_messages.py`
+- `src/drivers/um980/um980_driver.py`
+- `tests/drivers/test_unicore_parser.py`
+
+**Copilot prompt**: Generate Python class `Um980Driver` implementing `IGNSSDriver` with Unicore binary parsing and RTK state normalization.
 
 
 ## Milestone 2 — GNSS Abstraction & Data Model (2 days)
 - Implement normalized state object and pub/sub or callback API for subscribers.
 - Antenna offset application and EPSG handling.
+- **Updated**: Protocol normalization layer for UBX and Unicore binary formats.
 
 **Files/classes**
 - `src/core/gnss_state.py`
 - `src/core/gnss_abstraction.py`
+- `src/core/protocol_normalizer.py`
 - `tests/core/test_gnss_state.py`
 
 
@@ -79,12 +97,14 @@
 - `src/backend/api_server.py` (serves normalized state over WebSocket/HTTP)
 
 
-## Milestone 6 — Benchmark engine & replay (3 days)
+## Milestone 6 — Benchmark engine & dual-receiver comparison (3 days)
 - Dual-device comparison module and replay of logs.
+- **Updated**: Enhanced for ZED-F9P vs UM980 benchmarking scenarios.
 
 **Files/classes**
 - `src/core/benchmark.py`
 - `src/core/replay.py`
+- `src/drivers/driver_manager.py` (dual-receiver coordination)
 
 
 ## Milestone 7 — Health monitor & reports (2 days)
@@ -115,14 +135,15 @@
 
 ## Priority order (MVP first)
 1. Repo scaffold
-2. Driver interface + UBX ZED‑F9P
-3. GNSS abstraction
-4. NTRIP client
-5. Data logger
-6. Minimal dashboard (read-only)
-7. Replay + benchmark
-8. Health monitor
-9. Cloud sync + plugin manager
+2. Dual-Driver interface + UBX ZED‑F9P
+3. UM980 Unicore driver
+4. GNSS abstraction + protocol normalization
+5. NTRIP client
+6. Data logger
+7. Minimal dashboard (read-only)
+8. Dual-receiver benchmark
+9. Health monitor
+10. Cloud sync + plugin manager
 
 
 ## Developer guidance

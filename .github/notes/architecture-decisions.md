@@ -10,3 +10,4 @@
 | 006 | **Modular Architecture** | Maintainable, testable codebase | Layered architecture, dependency injection, event-driven (see `implementation-checklist.md`) | Accepted |
 | 007 | **Responsive UI Framework** | Universal Android screen support | Breakpoint design (mobile<600, tablet<1024), adaptive navigation (see `responsive-ui-framework.md`) | Accepted |
 | 008 | **Settings Inheritance Model** | Team sharing and field complexity | Profile inheritance, JSON validation, conflict resolution (see `settings-framework.md`) | Accepted |
+| 009 | **Dual-Driver Architecture** | ZED-F9P + UM980 benchmarking and redundancy | Plugin-based `IGNSSDriver` interface, unified data normalization, concurrent operation | Accepted |

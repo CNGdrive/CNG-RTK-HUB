@@ -7,20 +7,20 @@
 **Impact**: Core functionality failure on unsupported devices  
 **Mitigation**: Device compatibility database, Bluetooth fallback, USB host detection on startup
 
-### 2. Real-time Performance on Mobile
-**Risk**: <300ms latency target may be challenging on resource-constrained Android devices  
-**Impact**: Poor user experience, inaccurate timing metrics  
-**Mitigation**: Performance profiling during development, adaptive quality settings, background processing optimization
+### 2. Real-time Performance on Mobile (UPDATED)
+**Risk**: <1000ms latency target (relaxed from <300ms) may still be challenging with dual-receiver processing  
+**Impact**: Poor user experience, inaccurate timing metrics for dual-receiver benchmarking  
+**Mitigation**: Performance profiling during development, adaptive quality settings, background processing optimization, receiver prioritization
 
 ### 3. Battery Optimization vs Real-time Processing
 **Risk**: Android power management may throttle app during 8+ hour operation  
 **Impact**: Data loss, connection drops, reduced accuracy  
 **Mitigation**: Battery optimization whitelisting guidance, foreground service implementation, power usage monitoring
 
-### 4. UBX Binary Protocol Complexity
-**Risk**: u-blox UBX parsing errors could cause data corruption or crashes  
-**Impact**: Unreliable data, false accuracy readings  
-**Mitigation**: Extensive unit testing with recorded frames, checksum validation, safe mode NMEA fallback
+### 4. UBX + Unicore Binary Protocol Complexity
+**Risk**: Dual-protocol parsing (UBX + Unicore binary) errors could cause data corruption or crashes  
+**Impact**: Unreliable data, false accuracy readings, protocol conflicts  
+**Mitigation**: Extensive unit testing with recorded frames, checksum/CRC validation, safe mode NMEA fallback, protocol isolation
 
 ## Medium-Risk Items
 
@@ -41,10 +41,10 @@
 
 ## Low-Risk Items
 
-### 8. Multi-Device Resource Usage
-**Risk**: Connecting multiple receivers may overwhelm device resources  
-**Impact**: Performance degradation  
-**Mitigation**: Device count limits based on hardware, resource usage monitoring, graceful degradation
+### 8. Dual-Receiver Resource Usage
+**Risk**: Connecting ZED-F9P + UM980 simultaneously may overwhelm Android device resources  
+**Impact**: Performance degradation, battery drain, memory pressure  
+**Mitigation**: Android resource monitoring, connection limits based on hardware, resource usage monitoring, graceful degradation
 
 ### 9. Windows Integration Complexity
 **Risk**: File export/import workflows may be cumbersome  
