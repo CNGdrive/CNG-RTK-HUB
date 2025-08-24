@@ -2,7 +2,7 @@
 
 **Goal**: Prioritized implementation checklist. Deliverable: minimal viable product (MVP) that runs a ZED‑F9P over serial/USB with NTRIP corrections, a data logger and a simple dashboard.
 
-## Architecture Overview
+## Architecture
 **Layers**: Presentation (Flutter) → Application (Business Logic) → Domain (Models) → Infrastructure (I/O)
 **Patterns**: Plugin system via `IGNSSDriver` interface, Dependency injection `DIContainer`, Event-driven `EventBus`
 **Structure**: `src/core/` (models, services, utils), `src/drivers/` (zedf9p, um980), `src/infrastructure/` (storage, network), `src/api/` (websocket, http)
@@ -16,7 +16,7 @@
 - `README.md`
 - `pyproject.toml` (Python backend) + `pubspec.yaml` (Flutter frontend)
 - `src/` base folders: `core/ drivers/ ui/ tests/ tools/`
-- **Architecture references**: `responsive-ui-framework.md`, `settings-framework.md`, Flutter-Python API (in `tech-spec.md`), Architecture Overview (above)
+- **Architecture references**: `responsive-ui-framework.md`, `settings-framework.md`, API (in `tech-spec.md`)
 
 
 ## Milestone 1 — Driver interface + ZED‑F9P driver (3–5 days)
@@ -68,7 +68,7 @@
 - Flutter UI with responsive design for Android tablets/phones.
 - Map (leaflet/Mapbox), RTK indicator, skyplot, basic point capture.
 - **Responsive Design**: Implement adaptive layouts for all screen sizes (see `responsive-ui-framework.md`).
-- **API Integration**: WebSocket/HTTP communication with Python backend (see `tech-spec.md` Flutter-Python API section).
+- **API Integration**: WebSocket/HTTP communication with Python backend (see `tech-spec.md`).
 
 **Files/classes**
 - `lib/main.dart`

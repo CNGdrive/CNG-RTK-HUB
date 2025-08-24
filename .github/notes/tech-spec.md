@@ -16,9 +16,9 @@ Core Services: GNSS Abstraction, NTRIP Correction Service, Data Logger, Benchmar
 
 App UI consumes Core Services via internal API. Extensibility: Plugin manager, Cloud sync, Replay.
 
-**Implementation**: Follows layered architecture with dependency injection (see `implementation-checklist.md` Architecture Overview). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
+**Implementation**: Follows layered architecture with dependency injection (see `implementation-checklist.md`). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
 
-**Flutter-Python API**: WebSocket messages: `{"type":"position_update|command|response|error","payload":{}}`. REST endpoints: GET `/api/profiles`, POST `/api/devices/scan`, GET `/api/export/csv?session_id={id}`.
+**API**: WebSocket messages: `{"type":"position_update|command|response|error","payload":{}}`. REST endpoints: GET `/api/profiles`, POST `/api/devices/scan`, GET `/api/export/csv?session_id={id}`.
 
 ---
 
@@ -87,7 +87,7 @@ Fields are minimal and canonical for UI, logging and APIs.
 - Memory/CPU: run on lightweight Linux device or user laptop.
 - Modular code for Copilot to generate drivers and services.
 - **Responsive Design**: Universal screen size support (phones to tablets) with adaptive layouts.
-- **API Integration**: WebSocket real-time communication and HTTP REST endpoints (see Flutter-Python API section above).
+- **API Integration**: WebSocket real-time communication and HTTP REST endpoints (see above).
 - **Configuration Management**: Hierarchical profile system with validation and inheritance (see `settings-framework.md`).
 
 ---
