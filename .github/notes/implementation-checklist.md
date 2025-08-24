@@ -2,6 +2,8 @@
 
 **Goal**: Prioritized implementation checklist. Deliverable: minimal viable product (MVP) that runs a ZED‑F9P over serial/USB with NTRIP corrections, a data logger and a simple dashboard.
 
+**Development Rules**: All implementation must follow MINIMALISM_STANDARDS.md - maximum 150 lines per file, single source of truth, progressive disclosure.
+
 ## Architecture
 **Layers**: Presentation (Flutter) → Application (Business Logic) → Domain (Models) → Infrastructure (I/O)
 **Patterns**: Plugin system via `IGNSSDriver` interface, Dependency injection `DIContainer`, Event-driven `EventBus`

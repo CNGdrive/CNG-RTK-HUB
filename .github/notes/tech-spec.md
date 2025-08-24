@@ -4,6 +4,8 @@
 
 **Purpose**: Single cross-vendor RTK client and toolkit. Normalizes receiver outputs. Manages corrections (NTRIP). Logs and exports survey-grade data. Provides diagnostics, benchmarking and APIs for external consumers.
 
+**Development Philosophy**: Follow MINIMALISM_STANDARDS.md - prefer simple, working solutions over complex specifications.
+
 **Scope**: Mobile and desktop deployments supporting USB/serial/BT/UDP receivers. **Primary targets**: u‑blox ZED‑F9P, Unicore UM980 with dual-receiver capability. Future drivers: Trimble, Hemisphere, Septentrio.
 
 ---
