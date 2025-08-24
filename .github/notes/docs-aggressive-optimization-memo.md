@@ -32,7 +32,7 @@
 - Implementation-readiness preserved
 
 **Checkpoint Status**:
-- [ ] Checkpoint 1: flutter-python-api inlined
+- [x] Checkpoint 1: flutter-python-api inlined ✅ (File deleted, API inlined into tech-spec.md)
 - [ ] Checkpoint 2: implementation-checklist compressed  
 - [ ] Checkpoint 3: ADRs restructured
 - [ ] Checkpoint 4: modular-architecture merged

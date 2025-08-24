@@ -25,8 +25,7 @@
 - `src/drivers/zedf9p/zedf9p_driver.py`
 - `tests/drivers/test_ubx_parser.py`
 
-**Copilot prompt example**
-> "Generate a Python class `Zedf9pDriver` implementing `IDriver` that reads UBX frames from a serial port and returns a normalized RTK state object. Include unit tests with sample UBX NAV‑PVT binary frames."
+**Copilot prompt**: Generate Python class `Zedf9pDriver` implementing `IDriver` with UBX frame parsing and RTK state normalization.
 
 
 ## Milestone 2 — GNSS Abstraction & Data Model (2 days)
@@ -47,8 +46,7 @@
 - `src/core/ntrip_client.py`
 - `tests/core/test_ntrip.py` (use local mock server)
 
-**Copilot prompt**
-> "Create an NTRIP client in Python that connects to a mountpoint with basic auth or token, reads RTCM stream, measures latency and exposes a callback for raw correction bytes. Include reconnection backoff."
+**Copilot prompt**: Create NTRIP client with auth, RTCM stream, latency metrics, reconnect backoff.
 
 
 ## Milestone 4 — Data logger & export (2–3 days)
@@ -122,14 +120,10 @@
 9. Cloud sync + plugin manager
 
 
-## Developer guidance for Copilot
-- Keep functions single-responsibility to let Copilot complete files.
-- Provide small, explicit prompts per file including example binary frames for parsers.
-- Ship tests alongside code to iterate rapidly.
+## Developer guidance
+- Single-responsibility functions, explicit prompts, ship tests with code.
 
-
-## Risk mitigation
-- Build robust binary logging for root-cause. Keep raw frames on disk.
-- Provide a "safe mode" that publishes only NMEA GGA from corrected position if normalized state fails.
+## Risk mitigation  
+- Binary logging for root-cause analysis. Safe mode: NMEA GGA fallback.
 
 ---
