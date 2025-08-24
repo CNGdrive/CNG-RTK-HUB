@@ -2,6 +2,11 @@
 
 **Goal**: Prioritized implementation checklist. Deliverable: minimal viable product (MVP) that runs a ZED‑F9P over serial/USB with NTRIP corrections, a data logger and a simple dashboard.
 
+## Architecture Overview
+**Layers**: Presentation (Flutter) → Application (Business Logic) → Domain (Models) → Infrastructure (I/O)
+**Patterns**: Plugin system via `IGNSSDriver` interface, Dependency injection `DIContainer`, Event-driven `EventBus`
+**Structure**: `src/core/` (models, services, utils), `src/drivers/` (zedf9p, um980), `src/infrastructure/` (storage, network), `src/api/` (websocket, http)
+
 ## Milestone 0 — Repo scaffold (1 day)
 - Create repo, CI skeleton, linter, pre-commit.
 - Add architecture README and contributor guide.
@@ -11,7 +16,7 @@
 - `README.md`
 - `pyproject.toml` (Python backend) + `pubspec.yaml` (Flutter frontend)
 - `src/` base folders: `core/ drivers/ ui/ tests/ tools/`
-- **Architecture references**: `modular-architecture.md`, `responsive-ui-framework.md`, `settings-framework.md`, Flutter-Python API (in `tech-spec.md`)
+- **Architecture references**: `responsive-ui-framework.md`, `settings-framework.md`, Flutter-Python API (in `tech-spec.md`), Architecture Overview (above)
 
 
 ## Milestone 1 — Driver interface + ZED‑F9P driver (3–5 days)

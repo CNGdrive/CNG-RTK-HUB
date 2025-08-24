@@ -16,7 +16,7 @@ Core Services: GNSS Abstraction, NTRIP Correction Service, Data Logger, Benchmar
 
 App UI consumes Core Services via internal API. Extensibility: Plugin manager, Cloud sync, Replay.
 
-**Implementation**: Follows layered architecture with dependency injection (see `modular-architecture.md`). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
+**Implementation**: Follows layered architecture with dependency injection (see `implementation-checklist.md` Architecture Overview). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
 
 **Flutter-Python API**: WebSocket messages: `{"type":"position_update|command|response|error","payload":{}}`. REST endpoints: GET `/api/profiles`, POST `/api/devices/scan`, GET `/api/export/csv?session_id={id}`.
 
@@ -78,23 +78,6 @@ Fields are minimal and canonical for UI, logging and APIs.
 - SNR per-sat time series
 - Fix-summary intervals (1h/24h): fix %, time-to-fix, RMS
 - Dual-device benchmark: scatter, RMS, fix-match rate
-
----
-
-## Security & operations
-
-- NTRIP over TLS. Store creds securely. Option for OS keychain.
-- Cloud sync TLS + token auth. Minimal PII in logs.
-- Local-first: store logs locally and batch-push when network available.
-
----
-
-## Testing
-
-- Unit tests for parser → normalized state mapping.
-- Integration tests using recorded UBX/RTCM streams and synthetic NTRIP server.
-- Hardware-in-loop (HIL) with live receivers for acceptance.
-- Long-duration soak tests for reconnect/recovery behaviour.
 
 ---
 
