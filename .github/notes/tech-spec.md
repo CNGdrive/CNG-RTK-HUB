@@ -20,7 +20,7 @@ Core Services: GNSS Abstraction, NTRIP Correction Service, Data Logger, Benchmar
 
 App UI consumes Core Services via internal API. Extensibility: Plugin manager, Cloud sync, Replay, Dual-receiver benchmarking.
 
-**Implementation**: Follows layered architecture with dependency injection (see `implementation-checklist.md`). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
+**Implementation**: Follows layered architecture with dependency injection (see `implementation-plan.md`). Responsive UI design for all Android screen sizes (see `responsive-ui-framework.md`).
 
 **API**: WebSocket messages: `{"type":"position_update|command|response|error","payload":{}}`. REST endpoints: GET `/api/profiles`, POST `/api/devices/scan`, GET `/api/export/csv?session_id={id}`.
 

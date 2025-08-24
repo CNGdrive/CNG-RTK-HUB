@@ -6,7 +6,7 @@
 
 ## Architecture
 **Layers**: Presentation (Flutter) → Application (Business Logic) → Domain (Models) → Infrastructure (I/O)
-**Patterns**: Plugin system via `IGNSSDriver` interface, Dependency injection `DIContainer`, Event-driven `EventBus`
+**Patterns**: Plugin system via `IGNSSDriver` interface (see `architecture.md`), Dependency injection `DIContainer`, Event-driven `EventBus`
 **Structure**: `src/core/` (models, services, utils), `src/drivers/` (zedf9p, um980), `src/infrastructure/` (storage, network), `src/api/` (websocket, http), `src/android/` (resource management)
 
 ## Milestone 0 — Repo scaffold (1 day)
