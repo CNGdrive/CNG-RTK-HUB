@@ -11,7 +11,7 @@
 - `README.md`
 - `pyproject.toml` (Python backend) + `pubspec.yaml` (Flutter frontend)
 - `src/` base folders: `core/ drivers/ ui/ tests/ tools/`
-- **Architecture references**: `modular-architecture.md`, `flutter-python-api.md`, `responsive-ui-framework.md`, `settings-framework.md`
+- **Architecture references**: `modular-architecture.md`, `responsive-ui-framework.md`, `settings-framework.md`, Flutter-Python API (in `tech-spec.md`)
 
 
 ## Milestone 1 — Driver interface + ZED‑F9P driver (3–5 days)
@@ -65,7 +65,7 @@
 - Flutter UI with responsive design for Android tablets/phones.
 - Map (leaflet/Mapbox), RTK indicator, skyplot, basic point capture.
 - **Responsive Design**: Implement adaptive layouts for all screen sizes (see `responsive-ui-framework.md`).
-- **API Integration**: WebSocket/HTTP communication with Python backend (see `flutter-python-api.md`).
+- **API Integration**: WebSocket/HTTP communication with Python backend (see `tech-spec.md` Flutter-Python API section).
 
 **Files/classes**
 - `lib/main.dart`
