@@ -236,49 +236,27 @@ MAX_THREADS = 5  # UI + 2×drivers + NTRIP + logger
 
 ## Testing Patterns
 
-### Unit Test Template
+### Essential Tests
 ```python
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-class TestZedF9PDriver:
-    def test_parse_ubx_nav_pvt_valid(self):
-        # Mock UBX-NAV-PVT message with RTK fixed
-        ubx_data = b'\xb5\x62\x01\x07' + b'\x00' * 96  # Simplified
+class TestDrivers:
+    def test_ubx_parsing(self):
+        ubx_data = b'\xb5\x62\x01\x07' + b'\x00' * 96  # UBX-NAV-PVT
         result = parse_ubx_nav_pvt(ubx_data)
         assert result.fix_type == FixType.FIX
         assert -90 <= result.latitude <= 90
-        assert -180 <= result.longitude <= 180
     
-    def test_connection_error_handling(self):
+    def test_error_handling(self):
         driver = ZedF9PDriver()
         with pytest.raises(ConnectionError):
             await driver.connect("invalid_port")
     
-    def test_memory_limit_compliance(self):
-        driver = ZedF9PDriver()
-        # Monitor memory usage during operation
-        memory_usage = get_process_memory_mb()
-        assert memory_usage < MAX_PER_DRIVER_MB
+    def test_memory_compliance(self):
+        assert get_process_memory_mb() < MAX_PER_DRIVER_MB
 
-# Mock receiver data for testing
-MOCK_UBX_NAV_PVT = b'\xb5\x62\x01\x07\x5c\x00...'  # 96 bytes
-MOCK_UNICORE_BESTPOS = b'\xaa\x44\x12\x1c...'       # 72 bytes
-```
-
-### Error Simulation
-```python
-# Test graceful degradation
-def test_receiver_disconnect():
-    driver = ZedF9PDriver()
-    driver.simulate_disconnect()
-    state = driver.get_current_state()
-    assert state is None  # Should return None, not crash
-
-def test_corrupted_data():
-    corrupted_ubx = b'\xb5\x62\x01\x07' + b'\xff' * 96
-    with pytest.raises(ProtocolError):
-        parse_ubx_nav_pvt(corrupted_ubx)
+# Mock data: MOCK_UBX_NAV_PVT, MOCK_UNICORE_BESTPOS
 ```
 
 ---
