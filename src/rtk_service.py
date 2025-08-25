@@ -37,6 +37,9 @@ class RTKService:
         # Setup callbacks
         self.driver_manager.add_state_callback(self._on_gnss_state_update)
         
+        # Setup NTRIP integration
+        self._setup_ntrip_integration()
+        
     async def start(self) -> None:
         """Start all services."""
         self.logger.info("Starting RTK service...")
@@ -106,7 +109,8 @@ class RTKService:
         return {
             "service_running": self.running,
             "websocket_clients": self.websocket_server.client_count,
-            "drivers": self.driver_manager.get_all_status()
+            "drivers": self.driver_manager.get_all_status(),
+            "ntrip": self.driver_manager.get_ntrip_status()
         }
         
     async def run_forever(self) -> None:
@@ -135,6 +139,45 @@ class RTKService:
         """Handle shutdown signals."""
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
+        
+    def _setup_ntrip_integration(self) -> None:
+        """Setup NTRIP integration between driver manager and WebSocket server."""
+        try:
+            # Initialize NTRIP manager in driver manager
+            self.driver_manager.setup_ntrip()
+            
+            # Set WebSocket server for NTRIP status broadcasting
+            self.driver_manager.set_websocket_server(self.websocket_server)
+            
+            self.logger.info("NTRIP integration setup completed")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to setup NTRIP integration: {e}")
+            
+    def add_ntrip_mount(self, host: str, port: int, mount: str, 
+                       username: str, password: str, priority: int = 0,
+                       description: str = "") -> bool:
+        """Add NTRIP mountpoint for corrections."""
+        return self.driver_manager.add_ntrip_mount(
+            host, port, mount, username, password, priority, description
+        )
+        
+    async def start_ntrip_corrections(self) -> bool:
+        """Start NTRIP correction streaming."""
+        return await self.driver_manager.start_ntrip_corrections()
+        
+    async def stop_ntrip_corrections(self) -> bool:
+        """Stop NTRIP correction streaming."""
+        await self.driver_manager.stop_ntrip_corrections()
+        return True
+        
+    def get_ntrip_status(self) -> dict:
+        """Get NTRIP status and statistics."""
+        return self.driver_manager.get_ntrip_status()
+        
+    def get_ntrip_mounts(self) -> list:
+        """Get list of configured NTRIP mounts."""
+        return self.driver_manager.get_ntrip_mounts()
 
 
 async def main():
