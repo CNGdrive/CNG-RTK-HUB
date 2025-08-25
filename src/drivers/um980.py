@@ -5,6 +5,7 @@ Implementation from IMPLEMENTATION_GUIDE.md
 
 import asyncio
 import datetime
+import serial_asyncio
 from typing import Optional
 from ..core.interfaces import IGNSSDriver, GNSSState, FixType, ConnectionError, ProtocolError
 
@@ -19,8 +20,6 @@ class UM980Driver(IGNSSDriver):
     async def connect(self, port: str, baudrate: int = 115200) -> bool:
         """Connect to UM980 receiver via serial port."""
         try:
-            # Note: Using same pattern as ZedF9P, will need serial_asyncio
-            import serial_asyncio
             self._serial_reader, self._serial_writer = await serial_asyncio.open_serial_connection(
                 url=port, baudrate=baudrate
             )
