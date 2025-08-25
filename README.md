@@ -19,22 +19,61 @@ Universal RTK GNSS client supporting ZED-F9P (UBX) and UM980 (Unicore binary) re
 - Comprehensive test suite with error handling
 - Project configuration (pyproject.toml, requirements.txt)
 
+### ✅ Milestone 2: WebSocket API & Real-time Streaming (Completed)
+- WebSocket server for real-time position streaming
+- HTTP REST API for receiver configuration and control
+- Driver Manager for dual-receiver coordination
+- Real-time data broadcasting to multiple clients
+- Resource allocation and threading constraints (<35MB per driver)
+- Complete API endpoints for driver management
+
 ### 🔄 Next Milestones
-- WebSocket API for real-time data streaming
-- Flutter frontend with map display
-- NTRIP client for correction data
-- Android platform integration
+- NTRIP client for RTCM correction data
+- Flutter frontend with map display and RTK status
+- Android platform integration and permissions
 
-## Installation
+## Usage
 
+### Start the RTK Service
 ```bash
-pip install -r requirements.txt
+python -m src.rtk_service
 ```
 
-## Testing
+### API Endpoints
 
+**WebSocket Stream** (Real-time position data)
+```
+ws://localhost:8765
+```
+
+**HTTP REST API** (Configuration and control)
+```
+GET  /api/status           # System status
+GET  /api/drivers          # All drivers status
+POST /api/drivers          # Add new driver
+POST /api/drivers/{id}/connect     # Connect driver
+POST /api/drivers/{id}/corrections # Inject RTCM data
+POST /api/streams/start    # Start all data streams
+```
+
+### Example: Add and Connect Receivers
 ```bash
-pytest tests/
+# Add ZED-F9P receiver
+curl -X POST http://localhost:8080/api/drivers \
+  -H "Content-Type: application/json" \
+  -d '{"driver_id":"zedf9p","receiver_type":"ZED_F9P","port":"/dev/ttyUSB0"}'
+
+# Add UM980 receiver  
+curl -X POST http://localhost:8080/api/drivers \
+  -H "Content-Type: application/json" \
+  -d '{"driver_id":"um980","receiver_type":"UM980","port":"/dev/ttyUSB1"}'
+
+# Connect both receivers
+curl -X POST http://localhost:8080/api/drivers/zedf9p/connect
+curl -X POST http://localhost:8080/api/drivers/um980/connect
+
+# Start data streams
+curl -X POST http://localhost:8080/api/streams/start
 ```
 
 ## Project Structure
@@ -42,13 +81,27 @@ pytest tests/
 ```
 src/
 ├── core/
-│   └── interfaces.py      # IGNSSDriver, GNSSState, exceptions
+│   ├── interfaces.py      # IGNSSDriver, GNSSState, exceptions
+│   └── driver_manager.py  # Dual-receiver coordination
 ├── drivers/
 │   ├── zedf9p.py         # ZED-F9P UBX protocol driver
 │   └── um980.py          # UM980 Unicore binary driver
+├── api/
+│   ├── websocket_server.py # Real-time data streaming
+│   └── http_server.py     # REST API for configuration
+└── rtk_service.py         # Main service coordinator
 tests/
 ├── test_interfaces.py    # Core interface tests
-└── test_zedf9p.py        # ZED-F9P driver tests
+├── test_zedf9p.py        # ZED-F9P driver tests
+├── test_websocket_server.py # WebSocket functionality tests
+└── test_driver_manager.py   # Driver coordination tests
+```
+
+## Installation & Testing
+
+```bash
+pip install -r requirements.txt
+pytest tests/
 ```
 
 ## Memory Constraints
