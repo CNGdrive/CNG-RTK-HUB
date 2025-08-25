@@ -52,6 +52,9 @@ class DriverManager:
             'last_correction_time': None
         }
         
+        # WebSocket server for status broadcasting
+        self.websocket_server = None
+        
     def add_driver(self, driver_id: str, receiver_type: ReceiverType, 
                    port: str, baudrate: int = 115200) -> bool:
         """Add a GNSS driver to the manager."""
@@ -237,6 +240,11 @@ class DriverManager:
     
     # NTRIP Integration Methods
     
+    def set_websocket_server(self, websocket_server):
+        """Set WebSocket server for status broadcasting."""
+        self.websocket_server = websocket_server
+        self.logger.info("WebSocket server set for NTRIP status broadcasting")
+    
     def setup_ntrip(self) -> bool:
         """Initialize NTRIP mount manager."""
         if self.ntrip_manager:
@@ -282,8 +290,22 @@ class DriverManager:
         if success:
             self.ntrip_enabled = True
             self.logger.info("NTRIP corrections started")
+            
+            # Broadcast status update
+            if self.websocket_server:
+                await self.websocket_server.broadcast_ntrip_status(
+                    "connected",
+                    self.ntrip_manager.get_active_mount()
+                )
         else:
             self.logger.error("Failed to start NTRIP corrections")
+            
+            # Broadcast error status
+            if self.websocket_server:
+                await self.websocket_server.broadcast_ntrip_status(
+                    "error",
+                    {"message": "Failed to start NTRIP corrections"}
+                )
         
         return success
     
@@ -293,6 +315,13 @@ class DriverManager:
             await self.ntrip_manager.stop()
             self.ntrip_enabled = False
             self.logger.info("NTRIP corrections stopped")
+            
+            # Broadcast status update
+            if self.websocket_server:
+                await self.websocket_server.broadcast_ntrip_status(
+                    "disconnected",
+                    {"message": "NTRIP corrections stopped"}
+                )
     
     def _ntrip_correction_received(self, rtcm_data: bytes):
         """Handle RTCM corrections from NTRIP and inject to all drivers."""
@@ -305,16 +334,27 @@ class DriverManager:
         
         # Inject to all connected drivers
         injected_count = 0
+        injected_drivers = []
         for driver_id, driver in self.drivers.items():
             if self.driver_status.get(driver_id) in [DriverStatus.CONNECTED, DriverStatus.STREAMING]:
                 try:
                     if driver.inject_corrections(rtcm_data):
                         injected_count += 1
+                        injected_drivers.append(driver_id)
                         self.logger.debug(f"Injected RTCM correction to {driver_id}")
                     else:
                         self.logger.warning(f"Failed to inject correction to {driver_id}")
                 except Exception as e:
                     self.logger.error(f"Error injecting correction to {driver_id}: {e}")
+        
+        # Broadcast correction event
+        if self.websocket_server:
+            asyncio.create_task(self.websocket_server.broadcast_ntrip_correction({
+                "size_bytes": len(rtcm_data),
+                "injected_drivers": injected_drivers,
+                "total_corrections": self.correction_stats['total_corrections'],
+                "total_bytes": self.correction_stats['total_bytes']
+            }))
         
         if injected_count == 0:
             self.logger.warning("RTCM correction not injected to any driver")

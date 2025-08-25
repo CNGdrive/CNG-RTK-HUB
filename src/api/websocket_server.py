@@ -165,3 +165,98 @@ class WebSocketServer:
     def client_count(self) -> int:
         """Get number of connected clients."""
         return len(self.clients)
+    
+    # NTRIP Status Broadcasting Methods
+    
+    async def broadcast_ntrip_status(self, status: str, details: Dict[str, Any] = None):
+        """
+        Broadcast NTRIP connection status to all clients.
+        
+        Args:
+            status: Status type ('connected', 'disconnected', 'error', 'reconnecting')
+            details: Additional status details
+        """
+        message = {
+            "type": "ntrip_status",
+            "payload": {
+                "status": status,
+                "details": details or {},
+                "timestamp": self._get_timestamp()
+            }
+        }
+        
+        await self._broadcast_message(message)
+    
+    async def broadcast_ntrip_correction(self, correction_info: Dict[str, Any]):
+        """
+        Broadcast NTRIP correction injection status.
+        
+        Args:
+            correction_info: Information about the injected correction
+        """
+        message = {
+            "type": "ntrip_correction",
+            "payload": {
+                **correction_info,
+                "timestamp": self._get_timestamp()
+            }
+        }
+        
+        await self._broadcast_message(message)
+    
+    async def broadcast_ntrip_mount_change(self, mount_info: Dict[str, Any]):
+        """
+        Broadcast NTRIP mount point change.
+        
+        Args:
+            mount_info: Information about the new mount point
+        """
+        message = {
+            "type": "ntrip_mount_change",
+            "payload": {
+                **mount_info,
+                "timestamp": self._get_timestamp()
+            }
+        }
+        
+        await self._broadcast_message(message)
+    
+    async def broadcast_ntrip_statistics(self, stats: Dict[str, Any]):
+        """
+        Broadcast NTRIP connection and correction statistics.
+        
+        Args:
+            stats: Statistics data (bytes received, corrections sent, etc.)
+        """
+        message = {
+            "type": "ntrip_statistics",
+            "payload": {
+                **stats,
+                "timestamp": self._get_timestamp()
+            }
+        }
+        
+        await self._broadcast_message(message)
+    
+    async def _broadcast_message(self, message: Dict[str, Any]):
+        """Broadcast a message to all connected clients."""
+        if not self.clients:
+            return
+        
+        disconnected_clients = set()
+        message_json = json.dumps(message)
+        
+        for client in self.clients.copy():
+            try:
+                await client.send(message_json)
+            except websockets.exceptions.ConnectionClosed:
+                disconnected_clients.add(client)
+            except Exception as e:
+                self.logger.error(f"Error broadcasting message to client: {e}")
+                disconnected_clients.add(client)
+        
+        # Remove disconnected clients
+        self.clients -= disconnected_clients
+        
+        if disconnected_clients:
+            self.logger.info(f"Removed {len(disconnected_clients)} disconnected clients")

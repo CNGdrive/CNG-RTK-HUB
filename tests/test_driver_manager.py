@@ -5,7 +5,7 @@ Testing dual receiver coordination and resource management.
 
 import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 from src.core.driver_manager import DriverManager, ReceiverType, DriverStatus
 from src.core.interfaces import GNSSState, FixType, IGNSSDriver
 
@@ -292,3 +292,193 @@ def test_get_all_status():
             import src.core.driver_manager as dm
             dm.ZedF9PDriver = original_zedf9p
             dm.UM980Driver = original_um980
+
+
+# NTRIP Integration Tests
+
+def test_setup_ntrip():
+    """Test NTRIP manager setup."""
+    manager = DriverManager()
+    
+    # Test initial state
+    assert manager.ntrip_manager is None
+    assert manager.ntrip_enabled is False
+    
+    # Setup NTRIP
+    success = manager.setup_ntrip()
+    assert success is True
+    assert manager.ntrip_manager is not None
+    
+    # Test setup when already initialized
+    success = manager.setup_ntrip()
+    assert success is True
+
+
+def test_add_ntrip_mount():
+    """Test adding NTRIP mount point."""
+    manager = DriverManager()
+    
+    # Add mount (should auto-initialize NTRIP)
+    success = manager.add_ntrip_mount(
+        host="test.ntrip.com",
+        port=2101,
+        mount="TEST01",
+        username="testuser",
+        password="testpass",
+        priority=1,
+        description="Test mount"
+    )
+    
+    assert success is True
+    assert manager.ntrip_manager is not None
+    
+    # Verify mount was added
+    mounts = manager.get_ntrip_mounts()
+    assert len(mounts) == 1
+    assert mounts[0]['host'] == "test.ntrip.com"
+    assert mounts[0]['mount'] == "TEST01"
+
+
+@pytest.mark.asyncio
+async def test_start_ntrip_corrections_no_manager():
+    """Test starting NTRIP corrections without manager initialized."""
+    manager = DriverManager()
+    
+    success = await manager.start_ntrip_corrections()
+    assert success is False
+
+
+@pytest.mark.asyncio
+async def test_start_ntrip_corrections_with_manager():
+    """Test starting NTRIP corrections with manager."""
+    manager = DriverManager()
+    manager.setup_ntrip()
+    
+    # Mock the mount manager start method
+    with patch.object(manager.ntrip_manager, 'start', return_value=True) as mock_start:
+        success = await manager.start_ntrip_corrections()
+        
+        assert success is True
+        assert manager.ntrip_enabled is True
+        mock_start.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_stop_ntrip_corrections():
+    """Test stopping NTRIP corrections."""
+    manager = DriverManager()
+    manager.setup_ntrip()
+    manager.ntrip_enabled = True
+    
+    # Mock the mount manager stop method
+    with patch.object(manager.ntrip_manager, 'stop') as mock_stop:
+        await manager.stop_ntrip_corrections()
+        
+        assert manager.ntrip_enabled is False
+        mock_stop.assert_called_once()
+
+
+def test_ntrip_correction_received():
+    """Test NTRIP correction handling and distribution."""
+    manager = DriverManager()
+    
+    # Mock driver creation and add drivers
+    original_zedf9p = None
+    original_um980 = None
+    try:
+        import src.core.driver_manager as dm
+        original_zedf9p = dm.ZedF9PDriver
+        original_um980 = dm.UM980Driver
+        dm.ZedF9PDriver = MockDriver
+        dm.UM980Driver = MockDriver
+        
+        # Add drivers
+        manager.add_driver("zedf9p", ReceiverType.ZED_F9P, "/dev/ttyUSB0")
+        manager.add_driver("um980", ReceiverType.UM980, "/dev/ttyUSB1")
+        
+        # Set drivers as connected
+        manager.driver_status["zedf9p"] = DriverStatus.CONNECTED
+        manager.driver_status["um980"] = DriverStatus.CONNECTED
+        
+        # Test correction injection
+        rtcm_data = b'\xd3\x00\x13test_rtcm_data'
+        manager._ntrip_correction_received(rtcm_data)
+        
+        # Verify statistics updated
+        assert manager.correction_stats['total_corrections'] == 1
+        assert manager.correction_stats['total_bytes'] == len(rtcm_data)
+        assert manager.correction_stats['last_correction_time'] is not None
+        
+        # Verify corrections were injected to drivers
+        zedf9p_driver = manager.drivers["zedf9p"]
+        um980_driver = manager.drivers["um980"]
+        assert rtcm_data in zedf9p_driver.corrections_received
+        assert rtcm_data in um980_driver.corrections_received
+        
+    finally:
+        if original_zedf9p:
+            import src.core.driver_manager as dm
+            dm.ZedF9PDriver = original_zedf9p
+            dm.UM980Driver = original_um980
+
+
+def test_get_ntrip_status_no_manager():
+    """Test getting NTRIP status when manager not initialized."""
+    manager = DriverManager()
+    
+    status = manager.get_ntrip_status()
+    
+    assert status['enabled'] is False
+    assert status['initialized'] is False
+    assert status['active_mount'] is None
+    assert status['manager_status'] is None
+    assert 'correction_stats' in status
+
+
+def test_get_ntrip_status_with_manager():
+    """Test getting NTRIP status with manager initialized."""
+    manager = DriverManager()
+    manager.setup_ntrip()
+    manager.ntrip_enabled = True
+    
+    # Mock manager methods
+    with patch.object(manager.ntrip_manager, 'get_active_mount', return_value={'mount': 'TEST01'}), \
+         patch.object(manager.ntrip_manager, 'get_manager_status', return_value={'running': True}):
+        
+        status = manager.get_ntrip_status()
+        
+        assert status['enabled'] is True
+        assert status['initialized'] is True
+        assert status['active_mount']['mount'] == 'TEST01'
+        assert status['manager_status']['running'] is True
+
+
+def test_get_ntrip_mounts_no_manager():
+    """Test getting NTRIP mounts when manager not initialized."""
+    manager = DriverManager()
+    
+    mounts = manager.get_ntrip_mounts()
+    assert mounts == []
+
+
+def test_get_ntrip_mounts_with_manager():
+    """Test getting NTRIP mounts with manager initialized."""
+    manager = DriverManager()
+    manager.setup_ntrip()
+    
+    # Mock mount manager method
+    mock_mounts = [{'host': 'test.ntrip.com', 'mount': 'TEST01'}]
+    with patch.object(manager.ntrip_manager, 'get_mounts', return_value=mock_mounts):
+        mounts = manager.get_ntrip_mounts()
+        assert mounts == mock_mounts
+
+
+def test_websocket_server_integration():
+    """Test WebSocket server integration for NTRIP status broadcasting."""
+    manager = DriverManager()
+    
+    # Mock WebSocket server
+    mock_websocket = Mock()
+    manager.set_websocket_server(mock_websocket)
+    
+    assert manager.websocket_server == mock_websocket

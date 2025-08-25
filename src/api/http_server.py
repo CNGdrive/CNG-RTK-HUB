@@ -35,6 +35,14 @@ class HTTPServer:
         self.app.router.add_post('/api/streams/start', self.start_streams)
         self.app.router.add_post('/api/streams/stop', self.stop_streams)
         
+        # NTRIP endpoints
+        self.app.router.add_get('/api/ntrip/status', self.get_ntrip_status)
+        self.app.router.add_get('/api/ntrip/mounts', self.get_ntrip_mounts)
+        self.app.router.add_post('/api/ntrip/mounts', self.add_ntrip_mount)
+        self.app.router.add_delete('/api/ntrip/mounts/{mount_id}', self.remove_ntrip_mount)
+        self.app.router.add_post('/api/ntrip/connect', self.start_ntrip)
+        self.app.router.add_post('/api/ntrip/disconnect', self.stop_ntrip)
+        
         # Health check endpoint
         self.app.router.add_get('/health', self.health_check)
         
@@ -288,6 +296,157 @@ class HTTPServer:
             
         except Exception as e:
             self.logger.error(f"Error stopping streams: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    # NTRIP API Endpoints
+    
+    async def get_ntrip_status(self, request: web.Request) -> web_response.Response:
+        """Get NTRIP status and connection information."""
+        try:
+            status = self.driver_manager.get_ntrip_status()
+            return web.json_response(status)
+            
+        except Exception as e:
+            self.logger.error(f"Error getting NTRIP status: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    async def get_ntrip_mounts(self, request: web.Request) -> web_response.Response:
+        """Get list of configured NTRIP mounts."""
+        try:
+            mounts = self.driver_manager.get_ntrip_mounts()
+            return web.json_response({"mounts": mounts})
+            
+        except Exception as e:
+            self.logger.error(f"Error getting NTRIP mounts: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    async def add_ntrip_mount(self, request: web.Request) -> web_response.Response:
+        """Add NTRIP mountpoint configuration."""
+        try:
+            data = await request.json()
+            
+            # Validate required fields
+            required_fields = ['host', 'port', 'mount', 'username', 'password']
+            for field in required_fields:
+                if field not in data:
+                    return web.json_response(
+                        {"error": f"Missing required field: {field}"},
+                        status=400
+                    )
+            
+            # Extract parameters
+            host = data['host']
+            port = int(data['port'])
+            mount = data['mount']
+            username = data['username']
+            password = data['password']
+            priority = data.get('priority', 0)
+            description = data.get('description', '')
+            
+            # Add mount to manager
+            success = self.driver_manager.add_ntrip_mount(
+                host=host,
+                port=port,
+                mount=mount,
+                username=username,
+                password=password,
+                priority=priority,
+                description=description
+            )
+            
+            if success:
+                return web.json_response({
+                    "message": f"NTRIP mount added: {host}:{port}/{mount}",
+                    "mount_id": f"{host}:{port}/{mount}"
+                })
+            else:
+                return web.json_response(
+                    {"error": "Failed to add NTRIP mount"},
+                    status=400
+                )
+                
+        except ValueError as e:
+            return web.json_response(
+                {"error": f"Invalid data: {e}"},
+                status=400
+            )
+        except Exception as e:
+            self.logger.error(f"Error adding NTRIP mount: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    async def remove_ntrip_mount(self, request: web.Request) -> web_response.Response:
+        """Remove NTRIP mountpoint configuration."""
+        try:
+            mount_id = request.match_info['mount_id']
+            
+            if not self.driver_manager.ntrip_manager:
+                return web.json_response(
+                    {"error": "NTRIP not initialized"},
+                    status=400
+                )
+            
+            self.driver_manager.ntrip_manager.remove_mount(mount_id)
+            
+            return web.json_response({
+                "message": f"NTRIP mount removed: {mount_id}"
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error removing NTRIP mount: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    async def start_ntrip(self, request: web.Request) -> web_response.Response:
+        """Start NTRIP correction streaming."""
+        try:
+            # Initialize NTRIP if not already done
+            if not self.driver_manager.ntrip_manager:
+                self.driver_manager.setup_ntrip()
+            
+            success = await self.driver_manager.start_ntrip_corrections()
+            
+            if success:
+                return web.json_response({
+                    "message": "NTRIP corrections started"
+                })
+            else:
+                return web.json_response(
+                    {"error": "Failed to start NTRIP corrections"},
+                    status=400
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error starting NTRIP: {e}")
+            return web.json_response(
+                {"error": "Internal server error"},
+                status=500
+            )
+    
+    async def stop_ntrip(self, request: web.Request) -> web_response.Response:
+        """Stop NTRIP correction streaming."""
+        try:
+            await self.driver_manager.stop_ntrip_corrections()
+            
+            return web.json_response({
+                "message": "NTRIP corrections stopped"
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error stopping NTRIP: {e}")
             return web.json_response(
                 {"error": "Internal server error"},
                 status=500
