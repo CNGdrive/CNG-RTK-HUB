@@ -261,4 +261,108 @@ class TestDrivers:
 
 ---
 
-*Single file contains complete implementation context - no external references needed*
+## Next Implementation: NTRIP Client (Milestone 3)
+
+### NTRIP Client Interface
+```python
+from typing import Optional, Callable, Dict
+import aiohttp
+import asyncio
+
+class NTRIPClient:
+    def __init__(self, callback: Callable[[bytes], None]):
+        self.callback = callback  # Correction data callback
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.connected = False
+        self.reconnect_delay = 1.0  # Exponential backoff
+        
+    async def connect(self, url: str, mount: str, username: str, password: str) -> bool:
+        """Connect to NTRIP caster with authentication."""
+        
+    async def disconnect(self) -> None:
+        """Graceful disconnect with cleanup."""
+        
+    async def _handle_rtcm_stream(self, response: aiohttp.ClientResponse):
+        """Process incoming RTCM data stream."""
+        
+    def _parse_rtcm_frame(self, data: bytes) -> Optional[bytes]:
+        """Extract complete RTCM v3 messages from stream."""
+```
+
+### RTCM Parser Essentials
+```python
+def parse_rtcm3_message(data: bytes) -> Dict:
+    """Parse RTCM v3 message with CRC validation."""
+    if len(data) < 6:
+        raise ProtocolError("RTCM message too short")
+    
+    # RTCM v3 structure: 0xD3 + length(2) + payload + CRC(3)
+    if data[0] != 0xD3:
+        raise ProtocolError("Invalid RTCM sync byte")
+        
+    length = ((data[1] & 0x03) << 8) | data[2]
+    msg_type = (data[3] << 4) | (data[4] >> 4)
+    
+    # CRC-24Q validation
+    crc_received = (data[-3] << 16) | (data[-2] << 8) | data[-1]
+    crc_calculated = calculate_crc24q(data[:-3])
+    
+    if crc_received != crc_calculated:
+        raise ProtocolError("RTCM CRC validation failed")
+        
+    return {"type": msg_type, "length": length, "payload": data[3:-3]}
+```
+
+### Integration Updates Required
+
+#### Driver Manager Addition
+```python
+# Add to DriverManager class
+async def inject_corrections(self, rtcm_data: bytes) -> None:
+    """Inject RTCM corrections to all connected drivers."""
+    for driver_id, driver in self.drivers.items():
+        if driver.connected:
+            await driver.inject_corrections(rtcm_data)
+```
+
+#### WebSocket Status Broadcasting
+```python
+# Add to WebSocketServer class
+async def broadcast_ntrip_status(self, status: Dict) -> None:
+    """Broadcast NTRIP connection status to all clients."""
+    message = {
+        "type": "ntrip_status",
+        "payload": status,
+        "timestamp": self._get_timestamp()
+    }
+    await self._broadcast_to_all(json.dumps(message))
+```
+
+### Files to Implement
+- `src/core/ntrip_client.py` (200-250 lines)
+- `src/core/rtcm_parser.py` (150-200 lines)
+- `src/core/ntrip_auth.py` (100-150 lines)
+
+### Testing Patterns
+```python
+# NTRIP client tests
+async def test_ntrip_connection():
+    client = NTRIPClient(lambda data: None)
+    success = await client.connect("rtk2go.com", "TESTMOUNT", "user", "pass")
+    assert success
+    
+async def test_rtcm_parsing():
+    rtcm_data = b'\xd3\x00\x13\x3e\xd0...'  # Mock RTCM 1005
+    parsed = parse_rtcm3_message(rtcm_data)
+    assert parsed["type"] == 1005
+```
+
+### Resource Constraints
+- **Memory**: <10MB total for NTRIP subsystem
+- **Threads**: Single async thread for all NTRIP operations
+- **Latency**: <500ms correction delivery to drivers
+- **Reliability**: 99%+ uptime with auto-reconnect
+
+---
+
+*Complete implementation context - no external files needed*

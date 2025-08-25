@@ -25,6 +25,10 @@ pip install -r requirements.txt
 # Then run your development commands
 python -m src.rtk_service
 python -m pytest tests/
+
+# For NTRIP development, test individual components
+python -c "import src.core.driver_manager; print('Driver manager ready')"
+python -c "import src.api.websocket_server; print('WebSocket API ready')"
 ```
 
 ### Deactivate
