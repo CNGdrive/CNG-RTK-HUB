@@ -7,10 +7,10 @@ import asyncio
 import logging
 import signal
 from typing import Optional
-from .api.websocket_server import WebSocketServer
-from .api.http_server import HTTPServer
-from .core.driver_manager import DriverManager, ReceiverType
-from .core.interfaces import GNSSState
+from src.api.websocket_server import WebSocketServer
+from src.api.http_server import HTTPServer
+from src.core.driver_manager import DriverManager, ReceiverType
+from src.core.interfaces import GNSSState
 
 
 class RTKService:

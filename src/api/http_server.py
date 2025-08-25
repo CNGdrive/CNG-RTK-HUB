@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Dict, Any
 from aiohttp import web, web_response
-from ..core.driver_manager import DriverManager, ReceiverType
+from src.core.driver_manager import DriverManager, ReceiverType
 
 
 class HTTPServer:

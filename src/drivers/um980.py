@@ -7,7 +7,7 @@ import asyncio
 import datetime
 import serial_asyncio
 from typing import Optional
-from ..core.interfaces import IGNSSDriver, GNSSState, FixType, ConnectionError, ProtocolError
+from src.core.interfaces import IGNSSDriver, GNSSState, FixType, ConnectionError, ProtocolError
 
 
 class UM980Driver(IGNSSDriver):

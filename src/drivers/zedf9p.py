@@ -6,7 +6,7 @@ Implementation from IMPLEMENTATION_GUIDE.md
 import asyncio
 import serial_asyncio
 from typing import Optional
-from ..core.interfaces import IGNSSDriver, GNSSState, FixType, ConnectionError, ProtocolError
+from src.core.interfaces import IGNSSDriver, GNSSState, FixType, ConnectionError, ProtocolError
 
 
 class ZedF9PDriver(IGNSSDriver):

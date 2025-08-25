@@ -11,7 +11,7 @@ from typing import Set, Optional, Dict, Any
 from dataclasses import asdict
 import websockets
 from websockets.server import WebSocketServerProtocol
-from ..core.interfaces import GNSSState
+from src.core.interfaces import GNSSState
 
 
 class WebSocketServer:
