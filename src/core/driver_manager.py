@@ -10,6 +10,7 @@ from enum import Enum
 from ..core.interfaces import IGNSSDriver, GNSSState, ConnectionError
 from ..drivers.zedf9p import ZedF9PDriver
 from ..drivers.um980 import UM980Driver
+from ..ntrip.mount_manager import NTRIPMountManager, NTRIPMount
 
 
 class ReceiverType(Enum):
@@ -41,6 +42,15 @@ class DriverManager:
         self.state_callbacks: List[Callable[[str, GNSSState], None]] = []
         self.running = False
         self.logger = logging.getLogger(__name__)
+        
+        # NTRIP integration
+        self.ntrip_manager: Optional[NTRIPMountManager] = None
+        self.ntrip_enabled = False
+        self.correction_stats = {
+            'total_corrections': 0,
+            'total_bytes': 0,
+            'last_correction_time': None
+        }
         
     def add_driver(self, driver_id: str, receiver_type: ReceiverType, 
                    port: str, baudrate: int = 115200) -> bool:
@@ -158,6 +168,9 @@ class DriverManager:
         """Stop all data streams and disconnect drivers."""
         self.running = False
         
+        # Stop NTRIP corrections first
+        await self.stop_ntrip_corrections()
+        
         for driver_id in list(self.drivers.keys()):
             await self._disconnect_driver(driver_id)
             
@@ -221,3 +234,115 @@ class DriverManager:
             
         driver = self.drivers[driver_id]
         return driver.inject_corrections(rtcm_data)
+    
+    # NTRIP Integration Methods
+    
+    def setup_ntrip(self) -> bool:
+        """Initialize NTRIP mount manager."""
+        if self.ntrip_manager:
+            self.logger.warning("NTRIP manager already initialized")
+            return True
+        
+        self.ntrip_manager = NTRIPMountManager(self._ntrip_correction_received)
+        self.logger.info("NTRIP mount manager initialized")
+        return True
+    
+    def add_ntrip_mount(self, host: str, port: int, mount: str, 
+                       username: str, password: str, priority: int = 0,
+                       description: str = "") -> bool:
+        """Add NTRIP mountpoint for corrections."""
+        if not self.ntrip_manager:
+            if not self.setup_ntrip():
+                return False
+        
+        ntrip_mount = NTRIPMount(
+            host=host,
+            port=port,
+            mount=mount,
+            username=username,
+            password=password,
+            description=description
+        )
+        
+        self.ntrip_manager.add_mount(ntrip_mount, priority)
+        self.logger.info(f"Added NTRIP mount: {host}:{port}/{mount}")
+        return True
+    
+    async def start_ntrip_corrections(self) -> bool:
+        """Start NTRIP correction streaming."""
+        if not self.ntrip_manager:
+            self.logger.error("NTRIP manager not initialized")
+            return False
+        
+        if self.ntrip_enabled:
+            self.logger.warning("NTRIP corrections already started")
+            return True
+        
+        success = await self.ntrip_manager.start()
+        if success:
+            self.ntrip_enabled = True
+            self.logger.info("NTRIP corrections started")
+        else:
+            self.logger.error("Failed to start NTRIP corrections")
+        
+        return success
+    
+    async def stop_ntrip_corrections(self):
+        """Stop NTRIP correction streaming."""
+        if self.ntrip_manager and self.ntrip_enabled:
+            await self.ntrip_manager.stop()
+            self.ntrip_enabled = False
+            self.logger.info("NTRIP corrections stopped")
+    
+    def _ntrip_correction_received(self, rtcm_data: bytes):
+        """Handle RTCM corrections from NTRIP and inject to all drivers."""
+        import time
+        
+        # Update statistics
+        self.correction_stats['total_corrections'] += 1
+        self.correction_stats['total_bytes'] += len(rtcm_data)
+        self.correction_stats['last_correction_time'] = time.time()
+        
+        # Inject to all connected drivers
+        injected_count = 0
+        for driver_id, driver in self.drivers.items():
+            if self.driver_status.get(driver_id) in [DriverStatus.CONNECTED, DriverStatus.STREAMING]:
+                try:
+                    if driver.inject_corrections(rtcm_data):
+                        injected_count += 1
+                        self.logger.debug(f"Injected RTCM correction to {driver_id}")
+                    else:
+                        self.logger.warning(f"Failed to inject correction to {driver_id}")
+                except Exception as e:
+                    self.logger.error(f"Error injecting correction to {driver_id}: {e}")
+        
+        if injected_count == 0:
+            self.logger.warning("RTCM correction not injected to any driver")
+        else:
+            self.logger.debug(f"RTCM correction injected to {injected_count} drivers")
+    
+    def get_ntrip_status(self) -> Dict:
+        """Get NTRIP status and statistics."""
+        if not self.ntrip_manager:
+            return {
+                'enabled': False,
+                'initialized': False,
+                'active_mount': None,
+                'manager_status': None,
+                'correction_stats': self.correction_stats
+            }
+        
+        return {
+            'enabled': self.ntrip_enabled,
+            'initialized': True,
+            'active_mount': self.ntrip_manager.get_active_mount(),
+            'manager_status': self.ntrip_manager.get_manager_status(),
+            'correction_stats': self.correction_stats
+        }
+    
+    def get_ntrip_mounts(self) -> List[Dict]:
+        """Get list of configured NTRIP mounts."""
+        if not self.ntrip_manager:
+            return []
+        
+        return self.ntrip_manager.get_mounts()
